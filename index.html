@@ -315,7 +315,41 @@
     color: var(--accent);
   }
 
-  /* ---------- Footer ---------- */
+  .docs {
+    margin-bottom: 3.5rem;
+  }
+
+  .docs-code {
+    margin-bottom: 2.5rem;
+  }
+
+  .fn-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .fn-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+  }
+
+  .fn-sig {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.95rem;
+    color: var(--accent-2);
+    margin: 0 0 0.35rem;
+  }
+
+  .fn-desc {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin: 0 0 0.9rem;
+  }
+
+
   footer {
     border-top: 1px solid var(--border);
     padding: 2.5rem 1.5rem 3rem;
@@ -406,6 +440,87 @@
 </header>
 
 <main>
+  <section class="docs">
+    <p class="section-label">Setup</p>
+    <div class="docs-code">
+      <div class="code-block">
+        <pre><code id="setup-code">library(ggplot2)
+library(ggrateful)</code></pre>
+        <button class="code-copy-btn" type="button">Copy</button>
+      </div>
+    </div>
+
+    <p class="section-label">Functions</p>
+    <div class="fn-list">
+
+      <div class="fn-item">
+        <p class="fn-sig">deadhead(name, n, reverse = FALSE)</p>
+        <p class="fn-desc">Pull raw hex codes from a palette. Omit <code>n</code> to get every color.</p>
+        <div class="code-block">
+          <pre><code id="fn-code-deadhead">deadhead("steal_your_face")
+deadhead("steal_your_face", 3)
+deadhead("steal_your_face", 3, reverse = TRUE)</code></pre>
+          <button class="code-copy-btn" type="button">Copy</button>
+        </div>
+      </div>
+
+      <div class="fn-item">
+        <p class="fn-sig">scale_fill_deadhead(name, reverse = FALSE, ...)</p>
+        <p class="fn-desc">Discrete fill scale for bar charts, boxplots, and other filled geoms.</p>
+        <div class="code-block">
+          <pre><code id="fn-code-fill">ggplot(iris, aes(x = Species, y = Petal.Length, fill = Species)) +
+  geom_boxplot() +
+  scale_fill_deadhead(name = "dancing_bears") +
+  theme_minimal()</code></pre>
+          <button class="code-copy-btn" type="button">Copy</button>
+        </div>
+      </div>
+
+      <div class="fn-item">
+        <p class="fn-sig">scale_color_deadhead(name, reverse = FALSE, ...)</p>
+        <p class="fn-desc">Discrete color scale for points, lines, and other stroked geoms. <code>scale_colour_deadhead()</code> also works.</p>
+        <div class="code-block">
+          <pre><code id="fn-code-color">ggplot(mtcars, aes(x = wt, y = mpg, color = factor(gear))) +
+  geom_point(size = 3) +
+  scale_color_deadhead(name = "terrapin_station") +
+  theme_minimal()</code></pre>
+          <button class="code-copy-btn" type="button">Copy</button>
+        </div>
+      </div>
+
+      <div class="fn-item">
+        <p class="fn-sig">scale_fill_deadhead_c(name, reverse = FALSE, ...) / scale_color_deadhead_c()</p>
+        <p class="fn-desc">Continuous gradient scales, built on <code>scale_*_gradientn()</code>. Only available for palettes with a gradient variant — see the "continuous" badge on each card below.</p>
+        <div class="code-block">
+          <pre><code id="fn-code-gradient">ggplot(mtcars, aes(x = wt, y = mpg, color = hp)) +
+  geom_point(size = 3) +
+  scale_color_deadhead_c(name = "best_of") +
+  theme_minimal()</code></pre>
+          <button class="code-copy-btn" type="button">Copy</button>
+        </div>
+      </div>
+
+      <div class="fn-item">
+        <p class="fn-sig">display_deadhead(name, labels = TRUE)</p>
+        <p class="fn-desc">Preview a single palette as labeled color swatches.</p>
+        <div class="code-block">
+          <pre><code id="fn-code-display">display_deadhead("bertha")</code></pre>
+          <button class="code-copy-btn" type="button">Copy</button>
+        </div>
+      </div>
+
+      <div class="fn-item">
+        <p class="fn-sig">display_deadhead_all(labels = FALSE)</p>
+        <p class="fn-desc">Preview every palette at once, stacked for side-by-side comparison.</p>
+        <div class="code-block">
+          <pre><code id="fn-code-display-all">display_deadhead_all()</code></pre>
+          <button class="code-copy-btn" type="button">Copy</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <p class="section-label">Palette catalog — 16 total</p>
   <div class="grid" id="grid"></div>
 </main>
@@ -552,7 +667,7 @@
   function highlightR(code) {
     return escapeHtml(code)
       .replace(/"([^"]*)"/g, '<span class="str">"$1"</span>')
-      .replace(/\b(ggplot|aes|geom_point|geom_col|scale_color_deadhead_c|scale_fill_deadhead|theme_minimal)\b/g,
+      .replace(/\b(library|ggplot|aes|geom_point|geom_col|geom_boxplot|theme_minimal|deadhead|scale_color_deadhead_c|scale_colour_deadhead_c|scale_fill_deadhead_c|scale_color_deadhead|scale_colour_deadhead|scale_fill_deadhead|display_deadhead_all|display_deadhead)\b/g,
         '<span class="kw">$1</span>');
   }
 
@@ -606,22 +721,25 @@
       btn.addEventListener("click", () => copyHex(btn.dataset.hex));
     });
 
-    const codeCopyBtn = card.querySelector(".code-copy-btn");
-    const codeEl = card.querySelector(".code-block code");
-    codeCopyBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(codeEl.textContent);
-        codeCopyBtn.textContent = "Copied";
-        codeCopyBtn.classList.add("copied");
-        setTimeout(() => {
-          codeCopyBtn.textContent = "Copy";
-          codeCopyBtn.classList.remove("copied");
-        }, 1800);
-      } catch (e) { /* clipboard unavailable */ }
-    });
-
     grid.appendChild(card);
   }
+
+  // delegated handler covers both palette-card code blocks and the
+  // static Functions reference section below
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".code-copy-btn");
+    if (!btn) return;
+    const codeEl = btn.closest(".code-block").querySelector("code");
+    try {
+      await navigator.clipboard.writeText(codeEl.textContent);
+      btn.textContent = "Copied";
+      btn.classList.add("copied");
+      setTimeout(() => {
+        btn.textContent = "Copy";
+        btn.classList.remove("copied");
+      }, 1800);
+    } catch (err) { /* clipboard unavailable */ }
+  });
 </script>
 
 </body>
