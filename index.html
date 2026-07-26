@@ -316,7 +316,8 @@
   }
 
   .docs {
-    margin-bottom: 3.5rem;
+    margin-top: 4rem;
+    margin-bottom: 1rem;
   }
 
   .docs-code {
@@ -440,6 +441,9 @@
 </header>
 
 <main>
+  <p class="section-label">Palette catalog — 16 total</p>
+  <div class="grid" id="grid"></div>
+
   <section class="docs">
     <p class="section-label">Setup</p>
     <div class="docs-code">
@@ -490,7 +494,7 @@ deadhead("steal_your_face", 3, reverse = TRUE)</code></pre>
 
       <div class="fn-item">
         <p class="fn-sig">scale_fill_deadhead_c(name, reverse = FALSE, ...) / scale_color_deadhead_c()</p>
-        <p class="fn-desc">Continuous gradient scales, built on <code>scale_*_gradientn()</code>. Only available for palettes with a gradient variant — see the "continuous" badge on each card below.</p>
+        <p class="fn-desc">Continuous gradient scales, built on <code>scale_*_gradientn()</code>. Only available for palettes with a gradient variant — see the "continuous" badge on each card above.</p>
         <div class="code-block">
           <pre><code id="fn-code-gradient">ggplot(mtcars, aes(x = wt, y = mpg, color = hp)) +
   geom_point(size = 3) +
@@ -520,9 +524,6 @@ deadhead("steal_your_face", 3, reverse = TRUE)</code></pre>
 
     </div>
   </section>
-
-  <p class="section-label">Palette catalog — 16 total</p>
-  <div class="grid" id="grid"></div>
 </main>
 
 <footer>
