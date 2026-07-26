@@ -1,0 +1,18 @@
+Package: ggrateful
+Type: Package
+Title: Grateful Dead Album Color Palettes for ggplot2
+Version: 0.1.0
+Author: Josh Carrell
+Maintainer: Josh Carrell <joshdcarrell@gmail.com>
+Description: Provides discrete and continuous color palettes derived from
+    Grateful Dead album covers and tour art, along with scale functions
+    for use with ggplot2. Includes both fill and color scale variants,
+    a display function for previewing palettes, and continuous gradient
+    versions of select palettes.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+    ggplot2,
+    scales
+RoxygenNote: 7.3.1
