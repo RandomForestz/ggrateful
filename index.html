@@ -65,18 +65,46 @@
   }
 
   .install {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
     margin-top: 2rem;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 0.9rem 1.4rem;
+    padding: 0.9rem 1rem 0.9rem 1.4rem;
     font-family: "JetBrains Mono", monospace;
     font-size: 0.85rem;
     color: var(--accent-2);
     text-align: left;
   }
   .install .comment { color: var(--muted); }
+  .install .code-lines { display: flex; flex-direction: column; }
+
+  .copy-btn {
+    flex: none;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .copy-btn:hover,
+  .copy-btn:focus-visible {
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+    outline: none;
+  }
+  .copy-btn.copied {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 
   /* ---------- Layout ---------- */
   main {
@@ -222,12 +250,69 @@
     font-family: "JetBrains Mono", monospace;
     font-size: 0.65rem;
     color: var(--muted);
-    margin: 0 0 0.5rem;
+    margin: 1rem 0 0.5rem;
   }
+  .viz-label:first-child { margin-top: 0; }
+
   .waveform {
     display: block;
     width: 100%;
     height: 56px;
+  }
+
+  .preview {
+    display: block;
+    width: 100%;
+    height: 90px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .code-block {
+    position: relative;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0.85rem;
+  }
+  .code-block pre {
+    margin: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .code-block .kw { color: var(--accent-2); }
+  .code-block .str { color: var(--accent); }
+
+  .code-copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.25rem 0.45rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .code-copy-btn:hover,
+  .code-copy-btn:focus-visible {
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+    outline: none;
+  }
+  .code-copy-btn.copied {
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   /* ---------- Footer ---------- */
@@ -312,8 +397,11 @@
     16 palettes, 5 with continuous gradient variants, drop-in scales for your plots.
   </p>
   <div class="install">
-    <span class="comment"># install.packages("devtools")</span><br>
-    devtools::install_github("yourusername/ggrateful")
+    <span class="code-lines">
+      <span class="comment"># install.packages("devtools")</span>
+      <span id="install-code">devtools::install_github("RandomForestz/ggrateful")</span>
+    </span>
+    <button class="copy-btn" id="copy-install-btn" type="button">Copy</button>
   </div>
 </header>
 
@@ -333,6 +421,20 @@
 </footer>
 
 <script>
+  const copyBtn = document.getElementById("copy-install-btn");
+  copyBtn.addEventListener("click", async () => {
+    const code = document.getElementById("install-code").textContent;
+    try {
+      await navigator.clipboard.writeText(code);
+      copyBtn.textContent = "Copied";
+      copyBtn.classList.add("copied");
+      setTimeout(() => {
+        copyBtn.textContent = "Copy";
+        copyBtn.classList.remove("copied");
+      }, 1800);
+    } catch (e) { /* clipboard unavailable */ }
+  });
+
   // ---- Palette data (mirrors R/palettes.R) ----
   const palettes = {
     dancing_bears: ["#63429b","#42ae49","#fbde06","#f89422","#e9138f","#1561ac"],
@@ -363,7 +465,7 @@
   }
 
   // deterministic pseudo-random generator seeded by string, so each
-  // waveform is stable across reloads but distinct per palette
+  // waveform/preview is stable across reloads but distinct per palette
   function seededRand(seed) {
     let h = 0;
     for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
@@ -390,6 +492,68 @@
     }
     svg += `</svg>`;
     return svg;
+  }
+
+  // small rendered preview approximating what the code snippet produces,
+  // so the palette can be sanity-checked before running it
+  function buildPreviewChart(slug, colors, hasGradient) {
+    const rand = seededRand(slug + "-preview");
+    const w = 100, h = 60, pad = 4;
+
+    if (hasGradient) {
+      // scatter plot: points colored along the gradient
+      const n = 22;
+      let pts = "";
+      for (let i = 0; i < n; i++) {
+        const x = pad + rand() * (w - pad * 2);
+        const y = pad + rand() * (h - pad * 2);
+        const t = i / (n - 1);
+        const colorIdx = Math.round(t * (colors.length - 1));
+        pts += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="2.1" fill="${colors[colorIdx]}"></circle>`;
+      }
+      return `<svg class="preview" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${pts}</svg>`;
+    }
+
+    // bar chart: one bar per color in the palette (capped for readability)
+    const bars = Math.min(colors.length, 8);
+    const gap = 2;
+    const barWidth = (w - pad * 2 - gap * (bars - 1)) / bars;
+    let rects = "";
+    for (let i = 0; i < bars; i++) {
+      const barH = 14 + rand() * (h - pad * 2 - 14);
+      const x = pad + i * (barWidth + gap);
+      const y = h - pad - barH;
+      rects += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${barH.toFixed(2)}" fill="${colors[i]}"></rect>`;
+    }
+    return `<svg class="preview" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function buildCodeSnippet(slug, hasGradient) {
+    if (hasGradient) {
+      return [
+        `ggplot(data, aes(x = x, y = y, color = value)) +`,
+        `  geom_point(size = 3) +`,
+        `  scale_color_deadhead_c(name = "${slug}") +`,
+        `  theme_minimal()`
+      ].join("\n");
+    }
+    return [
+      `ggplot(data, aes(x = x, y = y, fill = group)) +`,
+      `  geom_col() +`,
+      `  scale_fill_deadhead(name = "${slug}") +`,
+      `  theme_minimal()`
+    ].join("\n");
+  }
+
+  function highlightR(code) {
+    return escapeHtml(code)
+      .replace(/"([^"]*)"/g, '<span class="str">"$1"</span>')
+      .replace(/\b(ggplot|aes|geom_point|geom_col|scale_color_deadhead_c|scale_fill_deadhead|theme_minimal)\b/g,
+        '<span class="kw">$1</span>');
   }
 
   async function copyHex(hex) {
@@ -424,13 +588,36 @@
         ${colors.map(hex => `<button class="swatch" style="background:${hex}" data-hex="${hex}" aria-label="Copy ${hex}"></button>`).join("")}
       </div>
       <div class="viz">
-        <p class="viz-label">example viz — deadhead("${slug}")</p>
+        <p class="viz-label">deadhead("${slug}")</p>
         ${buildWaveform(slug, colors)}
+
+        <p class="viz-label">example code</p>
+        <div class="code-block">
+          <pre><code>${highlightR(buildCodeSnippet(slug, hasGradient))}</code></pre>
+          <button class="code-copy-btn" type="button">Copy</button>
+        </div>
+
+        <p class="viz-label">output preview</p>
+        ${buildPreviewChart(slug, colors, hasGradient)}
       </div>
     `;
 
     card.querySelectorAll(".swatch").forEach(btn => {
       btn.addEventListener("click", () => copyHex(btn.dataset.hex));
+    });
+
+    const codeCopyBtn = card.querySelector(".code-copy-btn");
+    const codeEl = card.querySelector(".code-block code");
+    codeCopyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(codeEl.textContent);
+        codeCopyBtn.textContent = "Copied";
+        codeCopyBtn.classList.add("copied");
+        setTimeout(() => {
+          codeCopyBtn.textContent = "Copy";
+          codeCopyBtn.classList.remove("copied");
+        }, 1800);
+      } catch (e) { /* clipboard unavailable */ }
     });
 
     grid.appendChild(card);

@@ -10,7 +10,7 @@ color scales.
 
 ```r
 # install.packages("devtools")
-devtools::install_github("yourusername/ggrateful")
+devtools::install_github("RandomForestz/ggrateful")
 ```
 
 ## Usage
